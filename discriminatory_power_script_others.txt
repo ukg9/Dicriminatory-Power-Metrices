@@ -1,0 +1,45 @@
+This script calculates precision, recall, F1 score, Brier score, log loss, confusion matrix, Matthews correlation coefficient, and average precision for a given set of true labels and predicted probabilities.
+
+
+
+from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, brier_score_loss, log_loss, matthews_corrcoef, precision_recall_curve, average_precision_score
+import numpy as np
+
+# Assuming y_test are true labels and y_scores are predicted probabilities
+y_test = np.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 1])  # Example test labels
+y_pred = np.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 1])  # Example predicted labels
+y_scores = np.array([0.1, 0.4, 0.35, 0.8, 0.2, 0.9, 0.3, 0.85, 0.05, 0.95])  # Example predicted probabilities
+
+# Precision, Recall, and F1 Score
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+print(f'Precision: {precision}')
+print(f'Recall: {recall}')
+print(f'F1 Score: {f1}')
+
+# Brier Score
+brier_score = brier_score_loss(y_test, y_scores)
+print(f'Brier Score: {brier_score}')
+
+# Log Loss
+logloss = log_loss(y_test, y_scores)
+print(f'Log Loss: {logloss}')
+
+# Confusion Matrix
+conf_matrix = confusion_matrix(y_test, y_pred)
+print(f'Confusion Matrix:\n{conf_matrix}')
+
+# Matthews Correlation Coefficient (MCC)
+mcc = matthews_corrcoef(y_test, y_pred)
+print(f'MCC: {mcc}')
+
+# Precision-Recall Curve and Average Precision
+precision_curve, recall_curve, _ = precision_recall_curve(y_test, y_scores)
+average_precision = average_precision_score(y_test, y_scores)
+print(f'Average Precision: {average_precision}')
+
+
+
+
+

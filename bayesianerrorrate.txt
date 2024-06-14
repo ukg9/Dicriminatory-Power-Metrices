@@ -1,0 +1,98 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score
+
+# Step 1: Load real-world data
+def load_real_world_data():
+    # Load the Iris dataset
+    data = load_iris()
+    X = data.data
+    y = data.target
+    return X, y
+
+# Load the data
+X, y = load_real_world_data()
+
+# For the purpose of visualization, we'll select only two features and two classes
+X = X[y != 2, :2]
+y = y[y != 2]
+
+# Visualize the data
+plt.scatter(X[:, 0], X[:, 1], c=y, cmap='bwr', alpha=0.7)
+plt.title('Data Visualization')
+plt.xlabel('Feature 1')
+plt.ylabel('Feature 2')
+plt.show()
+
+# Step 2: Split data into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Step 3: Estimate probability distributions using Gaussian Naive Bayes
+model = GaussianNB()
+model.fit(X_train, y_train)
+
+# Step 4: Compute posterior probabilities and determine the Bayes classifier
+y_pred = model.predict(X_test)
+posterior_prob = model.predict_proba(X_test)
+
+# Step 5: Calculate the error rate
+accuracy = accuracy_score(y_test, y_pred)
+error_rate = 1 - accuracy
+
+# Calculate the Bayesian error rate
+bayesian_error_rate = np.mean(np.min(posterior_prob, axis=1))
+
+print(f'Accuracy: {accuracy:.4f}')
+print(f'Error Rate: {error_rate:.4f}')
+print(f'Bayesian Error Rate: {bayesian_error_rate:.4f}')
+
+# Step 6: Visualize decision boundary
+xx, yy = np.meshgrid(np.linspace(X[:, 0].min() - 1, X[:, 0].max() + 1, 100),
+                     np.linspace(X[:, 1].min() - 1, X[:, 1].max() + 1, 100))
+Z = model.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
+
+plt.contourf(xx, yy, Z, alpha=0.3, cmap='bwr')
+plt.scatter(X_test[:, 0], X_test[:, 1], c=y_test, cmap='bwr', edgecolors='k')
+plt.title('Decision Boundary and Data')
+plt.xlabel('Feature 1')
+plt.ylabel('Feature 2')
+plt.show()
+
+
+********************************************************************************************************************************
+
+from sklearn.datasets import load_iris
+
+# Load the Iris dataset
+data = load_iris()
+
+# Inspect the Bunch object
+print(data.keys())
+
+# Output:
+# dict_keys(['data', 'target', 'frame', 'target_names', 'DESCR', 'feature_names', 'filename'])
+
+# Access the data and target
+X = data.data
+y = data.target
+
+# Inspect the first few rows of the data and target
+print("Feature matrix (X):")
+print(X[:5])
+
+print("\nLabels (y):")
+print(y[:5])
+
+# Inspect feature names and target names
+print("\nFeature names:")
+print(data.feature_names)
+
+print("\nTarget names:")
+print(data.target_names)
+
+# Inspect the dataset description
+print("\nDataset description:")
+print(data.DESCR)
