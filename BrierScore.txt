@@ -1,0 +1,57 @@
+Interpretation:
+Brier Score: The Brier score ranges from 0 to 1, where 0 indicates perfect accuracy (all predicted probabilities are exactly equal to the actual outcomes) and 1 indicates the worst possible accuracy.
+
+Lower Scores are Better: A lower Brier score indicates better performance of the model in predicting the probability of default
+************************************************************************************************************************************************
+# Calculate mean
+mean_value = df['score'].mean()
+print(f"Mean: {mean_value}")
+
+# Calculate standard deviation
+std_dev_value = df['score'].std()
+print(f"Standard Deviation: {std_dev_value}")
+***********************************************************************************************************************************************
+
+import numpy as np
+import pandas as pd
+from sklearn.metrics import brier_score_loss
+
+# Assuming df is your DataFrame
+# df = pd.read_csv('path_to_leaf_dataset.csv')  # Load your dataset
+
+# Simulate a dataset
+np.random.seed(42)  # For reproducibility
+df = pd.DataFrame({
+    'credit_score': np.random.normal(700, 50, 1000),
+    'default': np.random.choice([0, 1], size=1000, p=[0.9, 0.1]),
+    # Assume some model has predicted probabilities
+    'predicted_prob': np.random.uniform(0, 1, 1000)
+})
+
+# Example: Suppose you have a model that outputs probabilities of default
+# For demonstration, we use random probabilities here
+# In practice, these would come from your predictive model
+
+# Calculate Brier score
+brier_score = brier_score_loss(df['default'], df['predicted_prob'])
+print(f"Brier Score: {brier_score:.4f}")
+
+*********************************************************************************************************************************************
+****'credit_score': np.random.normal(700, 50, 1000) ===== (Mean, Std Dev, ToTOBS)****
+
+*********************************************************************************************************************************************
+
+from sklearn.metrics import brier_score_loss
+
+# Example DataFrame (replace this with your actual DataFrame)
+import pandas as pd
+data = {
+    'predicted_prob': [0.75, 0.82, 0.63, 0.91, 0.42],
+    'actual_outcome': [1, 0, 1, 0, 1]  # Example binary outcomes (1 for default, 0 for non-default)
+}
+df = pd.DataFrame(data)
+
+# Calculate Brier score
+brier_score = brier_score_loss(df['actual_outcome'], df['predicted_prob'])
+print(f"Brier Score: {brier_score:.4f}")
+
