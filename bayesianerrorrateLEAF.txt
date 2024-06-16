@@ -1,0 +1,62 @@
+Interpretation:
+1. Classifier Error Rate: This is the error rate of the Bayes classifier applied to your dataset. It provides an estimate of how well the classifier performs.
+2. Approximate Bayes Error Rate: This provides an approximation of the theoretical minimum error rate. The closer your classifier error rate is to this value, the better your model is performing.
+
+Conclusion:
+By comparing the classifier error rate with the Bayes error rate, you can assess the performance of your credit risk model. This comparison helps you understand how close your model is to the optimal performance and identify areas for potential improvement.
+
+************************************************************************************************************************************************
+import numpy as np
+import pandas as pd
+from scipy.stats import norm
+
+# Load dataset
+# df = pd.read_csv('path_to_leaf_dataset.csv')  # Assuming you have already loaded the dataset
+df = pd.DataFrame({
+    'credit_score': np.random.normal(700, 50, 1000),
+    'default': np.random.choice([0, 1], size=1000, p=[0.9, 0.1])
+    # Add other features as needed
+})
+
+# Calculate prior probabilities
+P_default = df['default'].mean()
+P_non_default = 1 - P_default
+
+# Estimate mean and standard deviation of credit scores for each class
+mu_default = df[df['default'] == 1]['credit_score'].mean()
+sigma_default = df[df['default'] == 1]['credit_score'].std()
+mu_non_default = df[df['default'] == 0]['credit_score'].mean()
+sigma_non_default = df[df['default'] == 0]['credit_score'].std()
+
+# Define the probability density functions
+def p_x_given_default(x):
+    return norm.pdf(x, mu_default, sigma_default)
+
+def p_x_given_non_default(x):
+    return norm.pdf(x, mu_non_default, sigma_non_default)
+
+# Compute posterior probabilities
+def P_default_given_x(x):
+    return (p_x_given_default(x) * P_default) / (p_x_given_default(x) * P_default + p_x_given_non_default(x) * P_non_default)
+
+def P_non_default_given_x(x):
+    return (p_x_given_non_default(x) * P_non_default) / (p_x_given_default(x) * P_default + p_x_given_non_default(x) * P_non_default)
+
+# Construct the Bayes classifier
+def bayes_classifier(x):
+    if P_default_given_x(x) > P_non_default_given_x(x):
+        return 1  # Predict default
+    else:
+        return 0  # Predict non-default
+
+# Apply classifier to the dataset
+df['predicted'] = df['credit_score'].apply(bayes_classifier)
+
+# Calculate the error rate
+error_rate = (df['predicted'] != df['default']).mean()
+print(f"Classifier Error Rate: {error_rate}")
+
+# Bayes Error Rate approximation (requires numerical integration for exact value)
+x_values = np.linspace(df['credit_score'].min(), df['credit_score'].max(), 1000)
+bayes_error_rate = np.mean([1 - max(P_default_given_x(x), P_non_default_given_x(x)) for x in x_values])
+print(f"Approximate Bayes Error Rate: {bayes_error_rate}")
