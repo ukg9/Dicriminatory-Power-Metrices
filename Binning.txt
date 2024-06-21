@@ -1,0 +1,26 @@
+import pandas as pd
+import scorecardpy as sc
+
+# Sample data with credit scores ranging from 120 to 270
+data = {
+    'credit_score': [120, 130, 145, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270],
+    'default': [0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1]
+}
+df = pd.DataFrame(data)
+
+# Perform monotonic binning for credit scores
+bins_monotonic = sc.woebin(df, y='default', x=['credit_score'], method='chimerge')
+
+# Print the binning results
+print(bins_monotonic['credit_score'])
+
+# Custom breaks for 'credit_score'
+breaks_list = {
+    'credit_score': [120, 140, 160, 180, 200, 220, 240, 260]
+}
+
+# Perform custom binning with specified breaks
+bins_custom = sc.woebin(df, y='default', x=['credit_score'], breaks_list=breaks_list)
+
+# Print the custom binning results
+print(bins_custom['credit_score'])
