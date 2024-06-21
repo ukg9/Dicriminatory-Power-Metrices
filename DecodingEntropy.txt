@@ -1,0 +1,212 @@
+Steps to Categorize Credit Scores into Deciles:
+Sort the Dataset: Ensure your dataset is sorted by the credit score variable.
+
+Create Decile Categories: Divide the dataset into 10 equal groups based on the credit scores.
+
+Assign Decile Labels: Assign labels (decile numbers) to each observation based on which decile its credit score falls into.
+********************************************************************************
+
+import pandas as pd
+
+# Assuming df is your DataFrame with the credit score variable
+# Example data setup (replace with your actual dataset)
+df = pd.DataFrame({
+    'credit_score': np.random.randint(120, 271, size=71000)  # Example random credit scores
+})
+
+# Sort the dataframe by credit score (ascending)
+df_sorted = df.sort_values(by='credit_score')
+
+# Calculate deciles
+df_sorted['decile'] = pd.qcut(df_sorted['credit_score'], q=10, labels=False, precision=0)
+
+# Labels for deciles (if needed)
+decile_labels = ['Decile 1', 'Decile 2', 'Decile 3', 'Decile 4', 'Decile 5',
+                 'Decile 6', 'Decile 7', 'Decile 8', 'Decile 9', 'Decile 10']
+
+# Assign decile labels based on numeric values
+df_sorted['decile_label'] = pd.qcut(df_sorted['credit_score'], q=10, labels=decile_labels, precision=0)
+
+# View the result (optional)
+print(df_sorted.head())
+
+# Example of counting observations in each decile
+decile_counts = df_sorted['decile_label'].value_counts().sort_index()
+print("\nCounts of observations in each decile:")
+print(decile_counts)
+*********************************************************************************************************************
+
+
+import pandas as pd
+import numpy as np
+
+# Example data setup (replace with your actual dataset)
+# Assuming df_sorted is your DataFrame with credit scores categorized into deciles
+# and another column 'default' indicating whether there was a default (1) or not (0)
+df_sorted['default'] = np.random.choice([0, 1], size=len(df_sorted))  # Example random defaults
+
+# Calculate number of defaults and total observations by decile
+decile_stats = df_sorted.groupby('decile')['default'].agg(['sum', 'count']).reset_index()
+
+# Calculate conditional probability p_D|c for each decile
+decile_stats['p_D|c'] = decile_stats['sum'] / decile_stats['count']
+
+# Display the results
+print(decile_stats)
+*********************************************************************************************************************
+
+Main ENTROPY 3#
+
+import math
+
+# Variables (example values)
+p_D = 0.3  # Example probability of defaulting (for H0)
+
+p_D_given_c = [0.1, 0.2, 0.3, 0.4]  # Example list of conditional probabilities for each rating class (for Hc)
+p_c = [0.2, 0.3, 0.4, 0.1]  # Example observed frequencies (probabilities) of rating classes (for H1)
+
+# Function to calculate unconditional entropy H0
+def unconditional_entropy(p_D):
+    if p_D == 0 or p_D == 1:
+        return 0  # Entropy is 0 if probability is 0 or 1 (no uncertainty)
+    else:
+        return - (p_D * math.log2(p_D) + (1 - p_D) * math.log2(1 - p_D))
+
+# Function to calculate conditional entropy Hc
+def conditional_entropy(p_D_given_c):
+    if p_D_given_c == 0 or p_D_given_c == 1:
+        return 0  # Entropy is 0 if probability is 0 or 1 (no uncertainty)
+    else:
+        return - (p_D_given_c * math.log2(p_D_given_c) + (1 - p_D_given_c) * math.log2(1 - p_D_given_c))
+
+# Calculate H0
+H0 = unconditional_entropy(p_D)
+print(f"Unconditional Entropy H0: {H0}")
+
+# Calculate Hc for each rating class
+Hc_values = [conditional_entropy(p) for p in p_D_given_c]
+for i, Hc in enumerate(Hc_values):
+    print(f"Conditional Entropy Hc for rating class {i}: {Hc}")
+
+# Calculate H1 (average conditional entropy)
+H1 = sum(p * Hc for p, Hc in zip(p_c, Hc_values))
+print(f"Average Conditional Entropy H1: {H1}")
+***********************************************************************************************************************
+
+THEORY 
+1. PD helps quantify the overall risk level associated with a borrower or portfolio.
+2. Conditional probabilities allow for more granular risk assessment across different credit score segments.
+3. Average Conditional Entropy evaluates the effectiveness of the credit scoring model in distinguishing default probabilities across these segments, guiding refinements in risk assessment and decision-making strategies.
+
+
+import numpy as np
+
+# Example data setup (replace with your actual data)
+# Assuming decile_stats is a DataFrame with columns 'decile', 'p_D|c', and 'p_c'
+decile_stats = pd.DataFrame({
+    'decile': range(1, 11),  # Example decile numbers
+    'p_D|c': np.random.rand(10),  # Example random conditional probabilities
+    'p_c': np.ones(10) / 10  # Example equal weights for each decile (assuming equal frequency)
+})
+
+# Calculate conditional entropy H_c for each decile
+def conditional_entropy(p_D_given_c):
+    if p_D_given_c == 0 or p_D_given_c == 1:
+        return 0  # Entropy is 0 if probability is 0 or 1 (no uncertainty)
+    else:
+        return - (p_D_given_c * np.log2(p_D_given_c) + (1 - p_D_given_c) * np.log2(1 - p_D_given_c))
+
+decile_stats['H_c'] = decile_stats['p_D|c'].apply(conditional_entropy)
+
+# Calculate average conditional entropy H1
+H1 = (decile_stats['H_c'] * decile_stats['p_c']).sum()
+
+print(f"Average Conditional Entropy H1: {H1:.4f}")
+****************************************************************************************************************
+
+import pandas as pd
+
+# Example: Replace with your actual data loading process
+# Assuming decile_probs is a DataFrame with 'decile' and 'probability' columns
+decile_probs = pd.read_csv('your_data.csv')  # Load your actual dataset
+
+# Calculate total probability sum (optional normalization step)
+total_prob_sum = decile_probs['probability'].sum()
+
+# Compute p_c based on 'probability' column in decile_probs DataFrame
+decile_probs['p_c'] = decile_probs['probability'] / total_prob_sum  # Adjust normalization if needed
+
+# Display the first few rows to verify the calculation
+print(decile_probs.head())
+
+# Now use decile_probs['p_c'] in your calculations for Average Conditional Entropy H1
+*********************************************
+1. Load Your Dataset
+
+import pandas as pd
+import numpy as np
+
+# Load your actual dataset
+df = pd.read_csv('your_dataset.csv')
+
+2. Categorize into Deciles
+# Categorize credit scores into deciles
+df['decile'] = pd.qcut(df['credit_score'], q=10, labels=False, precision=0) + 1  # Deciles 1 to 10
+
+# Categorize credit scores into deciles
+df['decile'] = pd.qcut(df['credit_score'], q=10, labels=range(1, 11))
+
+# Display the first few rows to verify the decile assignment
+print(df.head())
+
+
+3. Calculate PDC
+# Calculate the proportion of defaulters within each decile
+decile_stats = df.groupby('decile').agg(
+    total=('creditscores', 'count'),
+    defaulters=('default', 'sum')
+).reset_index()
+
+decile_stats['p_D|c'] = decile_stats['defaulters'] / decile_stats['total']
+
+# Display the calculated probabilities
+print(decile_stats[['decile', 'p_D|c']])
+
+Integration with Average Conditional Entropy Calculation*********************
+# Calculate conditional entropy H_c for each decile
+def conditional_entropy(p_D_given_c):
+    if p_D_given_c == 0 or p_D_given_c == 1:
+        return 0  # Entropy is 0 if probability is 0 or 1 (no uncertainty)
+    else:
+        return - (p_D_given_c * np.log2(p_D_given_c) + (1 - p_D_given_c) * np.log2(1 - p_D_given_c))
+
+decile_stats['H_c'] = decile_stats['p_D|c'].apply(conditional_entropy)
+
+# Assuming equal frequency for simplicity (replace with actual p_c if different)
+decile_stats['p_c'] = decile_stats['total'] / decile_stats['total'].sum()
+
+# Calculate average conditional entropy H1
+H1 = (decile_stats['H_c'] * decile_stats['p_c']).sum()
+
+print(f"Average Conditional Entropy H1: {H1:.4f}")
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Function to calculate conditional entropy H_c for each decile
+def conditional_entropy(p_D_given_c):
+    if p_D_given_c == 0 or p_D_given_c == 1:
+        return 0  # Entropy is 0 if probability is 0 or 1 (no uncertainty)
+    else:
+        return - (p_D_given_c * np.log2(p_D_given_c) + (1 - p_D_given_c) * np.log2(1 - p_D_given_c))
+
+# Apply the conditional entropy function to each decile's probability of default
+decile_stats['H_c'] = decile_stats['p_D|c'].apply(conditional_entropy)
+
+# Calculate p_c based on the frequency of each decile
+decile_stats['p_c'] = decile_stats['total'] / decile_stats['total'].sum()
+
+# Calculate the average conditional entropy H1
+H1 = (decile_stats['H_c'] * decile_stats['p_c']).sum()
+
+print(f"Average Conditional Entropy H1: {H1:.4f}")
+
