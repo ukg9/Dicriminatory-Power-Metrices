@@ -1,0 +1,93 @@
+1. Import necessary libraries:
+
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy import stats
+
+2. Descriptive statistics:
+
+desc_stats = df[['age', 'height', 'weight']].describe()
+print(desc_stats)
+
+3. Histograms and density plots:
+
+for column in ['age', 'height', 'weight']:
+    sns.histplot(df[column], kde=True)
+    plt.title(f'Histogram and Density Plot for {column.capitalize()}')
+    plt.xlabel(column.capitalize())
+    plt.ylabel('Frequency')
+    plt.show()
+
+4. Box Plots:
+
+for column in ['age', 'height', 'weight']:
+    sns.boxplot(x=df[column])
+    plt.title(f'Box Plot for {column.capitalize()}')
+    plt.xlabel(column.capitalize())
+    plt.show()
+
+5. QQ plots for normality check:
+
+for column in ['age', 'height', 'weight']:
+    stats.probplot(df[column], dist="norm", plot=plt)
+    plt.title(f'QQ Plot for {column.capitalize()}')
+    plt.show()
+
+6. Skewness and kurtosis:
+
+for column in ['age', 'height', 'weight']:
+    skewness = df[column].skew()
+    kurtosis = df[column].kurt()
+    print(f'{column.capitalize()} - Skewness: {skewness}, Kurtosis: {kurtosis}')
+
+
+Explanation:
+Descriptive statistics: Using describe() from pandas, which provides count, mean, std deviation, min, 25%, 50%, 75%, and max values.
+
+Histograms and density plots: Using seaborn.histplot() with kde=True to overlay a kernel density estimate.
+
+Box plots: Using seaborn.boxplot() to visualize the spread and detect outliers.
+
+QQ plots: Using scipy.stats.probplot() to check for normality.
+
+Skewness and kurtosis: Using skew() and kurt() methods from pandas to measure asymmetry and peakedness.
+
+
+OUTLIERS:::Script
+
+import pandas as pd
+import numpy as np
+
+# Sample data
+data = {'var1': [10, 12, 12, 13, 12, 11, 14, 100, 12, 12],
+        'var2': [5, 8, 6, 200, 7, 9, 6, 10, 8, 7]}
+df = pd.DataFrame(data)
+
+# Step 1: Calculate 5th and 95th percentiles
+pctl_5 = df.quantile(0.05)
+pctl_95 = df.quantile(0.95)
+
+# Step 2: Cap values at the 5th and 95th percentiles
+df_capped = df.clip(lower=pctl_5, upper=pctl_95, axis=1)
+
+print("Original DataFrame:")
+print(df)
+print("\nCapped DataFrame:")
+print(df_capped)
+
+
+Explanation
+Calculate Percentiles (quantile method):
+
+df.quantile(0.05) calculates the 5th percentile (P_5) for each column (variable) in the DataFrame df.
+df.quantile(0.95) calculates the 95th percentile (P_95) for each column (variable) in the DataFrame df.
+Cap Values (clip method):
+
+df.clip(lower=pctl_5, upper=pctl_95, axis=1) caps (or clips) values in the DataFrame df between pctl_5 (5th percentile) and pctl_95 (95th percentile).
+axis=1 specifies to apply the operation column-wise (across variables).
+Output
+The df_capped DataFrame will contain values capped at the 5th and 95th percentiles for each variable (var1 and var2 in this example).
+
+
