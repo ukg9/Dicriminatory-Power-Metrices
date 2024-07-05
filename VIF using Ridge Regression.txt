@@ -1,0 +1,31 @@
+# Calculate VIF using Ridge Regression
+def calculate_vif_ridge(X):
+    vif_data = pd.DataFrame()
+    vif_data["feature"] = X.columns
+    ridge = Ridge(alpha=0.1)
+    for i in range(len(X.columns)):
+        X_other = np.delete(X.values, i, axis=1)
+        y = X.iloc[:, i].values
+        ridge.fit(X_other, y)
+        r_squared = ridge.score(X_other, y)
+        vif = 1 / (1 - r_squared)
+        vif_data.loc[i, "VIF"] = vif
+    return vif_data
+
+
+
+
+# Check for multicollinearity
+vif_data = calculate_vif_ridge(X)
+print("VIF before removing multicollinearity:")
+print(vif_data)
+
+# Remove features with VIF > 10 (multicollinearity threshold)
+while vif_data['VIF'].max() > 10:
+    remove_feature = vif_data.loc[vif_data['VIF'].idxmax(), 'feature']
+    selected_features.remove(remove_feature)
+    X = df[selected_features]
+    vif_data = calculate_vif_ridge(X)
+
+print("VIF after removing multicollinearity:")
+print(vif_data)
