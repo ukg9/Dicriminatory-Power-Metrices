@@ -1,0 +1,146 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import KBinsDiscretizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, roc_auc_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+# Sample dataset
+data = {
+    'cont1': np.random.rand(100),
+    'cont2': np.random.rand(100),
+    'cont3': np.random.rand(100),
+    'cont4': np.random.rand(100),
+    'cat1': np.random.choice(['A', 'B', 'C'], 100),
+    'cat2': np.random.choice(['X', 'Y', 'Z'], 100),
+    'cat3': np.random.choice([0, 1], 100),  # Binary categorical variable
+    'target': np.random.choice([0, 1], 100)
+}
+
+df = pd.DataFrame(data)
+
+# Binning continuous variables
+def bin_continuous_variables(df, continuous_features, n_bins=5):
+    kbins = KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='quantile')
+    for feature in continuous_features:
+        df[feature + '_bin'] = kbins.fit_transform(df[[feature]]).astype(int)
+    return df
+
+# Calculating WOE and IV
+def calculate_woe_iv(df, feature, target):
+    df = df.copy()
+    total_good = df[target].sum()
+    total_bad = len(df) - total_good
+
+    grouped = df.groupby(feature)[target].agg(['sum', 'count'])
+    grouped['good_dist'] = grouped['sum'] / total_good
+    grouped['bad_dist'] = (grouped['count'] - grouped['sum']) / total_bad
+    grouped['WOE'] = np.log(grouped['good_dist'] / grouped['bad_dist'])
+    grouped['IV'] = (grouped['good_dist'] - grouped['bad_dist']) * grouped['WOE']
+
+    iv = grouped['IV'].sum()
+
+    return grouped['WOE'].to_dict(), iv, grouped
+
+# Transforming categorical variables and calculating IV
+def transform_and_calculate_iv(df, categorical_features, target):
+    iv_dict = {}
+    woe_dict = {}
+    for feature in categorical_features:
+        if df[feature].nunique() > 2:  # Skip WOE calculation for binary categorical variable
+            woe, iv, grouped = calculate_woe_iv(df, feature, target)
+            df[feature + '_WOE'] = df[feature].map(woe)
+            iv_dict[feature + '_WOE'] = iv
+            woe_dict[feature] = grouped
+        else:
+            df[feature + '_WOE'] = df[feature]  # Directly use the binary variable
+            iv_dict[feature + '_WOE'] = 0  # IV is not applicable for binary variable
+    return df, iv_dict, woe_dict
+
+# Plotting WOE
+def plot_woe(woe_dict):
+    for feature, grouped in woe_dict.items():
+        plt.figure(figsize=(10, 6))
+        sns.barplot(x=grouped.index, y=grouped['WOE'], palette="viridis")
+        plt.title(f'WOE for {feature}')
+        plt.xlabel(feature)
+        plt.ylabel('WOE')
+        plt.show()
+
+# Calculate VIF
+def calculate_vif(X):
+    vif_data = pd.DataFrame()
+    vif_data["feature"] = X.columns
+    vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(len(X.columns))]
+    return vif_data
+
+# Prepare the dataset
+continuous_features = ['cont1', 'cont2', 'cont3', 'cont4']
+categorical_features = ['cat1', 'cat2', 'cat3']  # Include the binary categorical variable
+target = 'target'
+
+# Bin continuous variables
+df = bin_continuous_variables(df, continuous_features)
+
+# Transform categorical variables and calculate IV
+df, iv_dict, woe_dict = transform_and_calculate_iv(df, categorical_features, target)
+
+# Calculate IV for binned continuous variables
+for feature in continuous_features:
+    woe, iv, grouped = calculate_woe_iv(df, feature + '_bin', target)
+    df[feature + '_WOE'] = df[feature + '_bin'].map(woe)
+    iv_dict[feature + '_WOE'] = iv
+    woe_dict[feature + '_bin'] = grouped
+
+# Feature selection based on IV threshold
+iv_threshold = 0.02  # You can adjust this threshold
+selected_features = [feature for feature, iv in iv_dict.items() if iv > iv_threshold]
+
+# Include binary categorical variables directly
+binary_categorical_features = [feature for feature in categorical_features if df[feature].nunique() == 2]
+selected_features += [feature + '_WOE' for feature in binary_categorical_features]
+
+# Prepare final dataset
+X = df[selected_features]
+y = df[target]
+
+# Check for multicollinearity
+vif_data = calculate_vif(X)
+print("VIF before removing multicollinearity:")
+print(vif_data)
+
+# Remove features with VIF > 10 (multicollinearity threshold)
+while vif_data['VIF'].max() > 10:
+    remove_feature = vif_data.loc[vif_data['VIF'].idxmax(), 'feature']
+    selected_features.remove(remove_feature)
+    X = df[selected_features]
+    vif_data = calculate_vif(X)
+
+print("VIF after removing multicollinearity:")
+print(vif_data)
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Logistic Regression
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+y_prob = model.predict_proba(X_test)[:, 1]
+
+# Evaluation
+print(classification_report(y_test, y_pred))
+print(f"ROC AUC: {roc_auc_score(y_test, y_prob)}")
+
+# Display selected features and their IV
+print("Selected features and their Information Value (IV):")
+for feature in selected_features:
+    print(f"{feature}: {iv_dict[feature]}")
+
+# Plot WOE for each feature
+plot_woe(woe_dict)

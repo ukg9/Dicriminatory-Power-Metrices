@@ -1,0 +1,191 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import KBinsDiscretizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, roc_auc_score
+
+# Sample dataset
+data = {
+    'cont1': np.random.rand(100),
+    'cont2': np.random.rand(100),
+    'cont3': np.random.rand(100),
+    'cont4': np.random.rand(100),
+    'cat1': np.random.choice(['A', 'B', 'C'], 100),
+    'cat2': np.random.choice(['X', 'Y', 'Z'], 100),
+    'cat3': np.random.choice(['M', 'N'], 100),
+    'target': np.random.choice([0, 1], 100)
+}
+
+df = pd.DataFrame(data)
+
+# Binning continuous variables
+def bin_continuous_variables(df, continuous_features, n_bins=5):
+    kbins = KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='quantile')
+    for feature in continuous_features:
+        df[feature + '_bin'] = kbins.fit_transform(df[[feature]]).astype(int)
+    return df
+
+# Calculating WOE and IV
+def calculate_woe_iv(df, feature, target):
+    df = df.copy()
+    total_good = df[target].sum()
+    total_bad = len(df) - total_good
+
+    grouped = df.groupby(feature)[target].agg(['sum', 'count'])
+    grouped['good_dist'] = grouped['sum'] / total_good
+    grouped['bad_dist'] = (grouped['count'] - grouped['sum']) / total_bad
+    grouped['WOE'] = np.log(grouped['good_dist'] / grouped['bad_dist'])
+    grouped['IV'] = (grouped['good_dist'] - grouped['bad_dist']) * grouped['WOE']
+
+    iv = grouped['IV'].sum()
+
+    return grouped['WOE'].to_dict(), iv
+
+# Transforming categorical variables and calculating IV
+def transform_and_calculate_iv(df, categorical_features, target):
+    iv_dict = {}
+    for feature in categorical_features:
+        woe, iv = calculate_woe_iv(df, feature, target)
+        df[feature + '_WOE'] = df[feature].map(woe)
+        iv_dict[feature] = iv
+    return df, iv_dict
+
+# Prepare the dataset
+continuous_features = ['cont1', 'cont2', 'cont3', 'cont4']
+categorical_features = ['cat1', 'cat2', 'cat3']
+target = 'target'
+
+# Bin continuous variables
+df = bin_continuous_variables(df, continuous_features)
+
+# Transform categorical variables and calculate IV
+df, iv_dict = transform_and_calculate_iv(df, categorical_features, target)
+
+# Prepare final dataset
+woe_features = [feature + '_WOE' for feature in categorical_features]
+binned_features = [feature + '_bin' for feature in continuous_features]
+final_features = woe_features + binned_features
+
+X = df[final_features]
+y = df[target]
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Logistic Regression
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+y_prob = model.predict_proba(X_test)[:, 1]
+
+# Evaluation
+print(classification_report(y_test, y_pred))
+print(f"ROC AUC: {roc_auc_score(y_test, y_prob)}")
+
+# Display Information Value (IV) for each feature
+print("Information Value (IV) for each feature:")
+for feature, iv in iv_dict.items():
+    print(f"{feature}: {iv}")
+
+*****************************************************************************************************************
+
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import KBinsDiscretizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, roc_auc_score
+
+# Sample dataset
+data = {
+    'cont1': np.random.rand(100),
+    'cont2': np.random.rand(100),
+    'cont3': np.random.rand(100),
+    'cont4': np.random.rand(100),
+    'cat1': np.random.choice(['A', 'B', 'C'], 100),
+    'cat2': np.random.choice(['X', 'Y', 'Z'], 100),
+    'cat3': np.random.choice(['M', 'N'], 100),
+    'target': np.random.choice([0, 1], 100)
+}
+
+df = pd.DataFrame(data)
+
+# Binning continuous variables
+def bin_continuous_variables(df, continuous_features, n_bins=5):
+    kbins = KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='quantile')
+    for feature in continuous_features:
+        df[feature + '_bin'] = kbins.fit_transform(df[[feature]]).astype(int)
+    return df
+
+# Calculating WOE and IV
+def calculate_woe_iv(df, feature, target):
+    df = df.copy()
+    total_good = df[target].sum()
+    total_bad = len(df) - total_good
+
+    grouped = df.groupby(feature)[target].agg(['sum', 'count'])
+    grouped['good_dist'] = grouped['sum'] / total_good
+    grouped['bad_dist'] = (grouped['count'] - grouped['sum']) / total_bad
+    grouped['WOE'] = np.log(grouped['good_dist'] / grouped['bad_dist'])
+    grouped['IV'] = (grouped['good_dist'] - grouped['bad_dist']) * grouped['WOE']
+
+    iv = grouped['IV'].sum()
+
+    return grouped['WOE'].to_dict(), iv
+
+# Transforming categorical variables and calculating IV
+def transform_and_calculate_iv(df, categorical_features, target):
+    iv_dict = {}
+    for feature in categorical_features:
+        woe, iv = calculate_woe_iv(df, feature, target)
+        df[feature + '_WOE'] = df[feature].map(woe)
+        iv_dict[feature + '_WOE'] = iv
+    return df, iv_dict
+
+# Prepare the dataset
+continuous_features = ['cont1', 'cont2', 'cont3', 'cont4']
+categorical_features = ['cat1', 'cat2', 'cat3']
+target = 'target'
+
+# Bin continuous variables
+df = bin_continuous_variables(df, continuous_features)
+
+# Transform categorical variables and calculate IV
+df, iv_dict = transform_and_calculate_iv(df, categorical_features, target)
+
+# Calculate IV for binned continuous variables
+for feature in continuous_features:
+    woe, iv = calculate_woe_iv(df, feature + '_bin', target)
+    df[feature + '_WOE'] = df[feature + '_bin'].map(woe)
+    iv_dict[feature + '_WOE'] = iv
+
+# Feature selection based on IV threshold
+iv_threshold = 0.02  # You can adjust this threshold
+selected_features = [feature for feature, iv in iv_dict.items() if iv > iv_threshold]
+
+# Prepare final dataset
+X = df[selected_features]
+y = df[target]
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Logistic Regression
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+y_prob = model.predict_proba(X_test)[:, 1]
+
+# Evaluation
+print(classification_report(y_test, y_pred))
+print(f"ROC AUC: {roc_auc_score(y_test, y_prob)}")
+
+# Display selected features and their IV
+print("Selected features and their Information Value (IV):")
+for feature in selected_features:
+    print(f"{feature}: {iv_dict[feature]}")
