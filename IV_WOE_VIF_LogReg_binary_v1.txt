@@ -159,7 +159,16 @@ for feature in selected_features:
 # Prepare final dataset
 X = df[selected_features]
 y = df[target]
+*********************************************************************************************************
 
+# Standardize the features
+scaler = StandardScaler()
+X = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
+
+# Check for infinite or NaN values
+if np.any(np.isinf(X)) or np.any(np.isnan(X)):
+    raise ValueError("The input X contains infinite or NaN values.")
+****************************************************************************************************************
 # Check for multicollinearity
 vif_data = calculate_vif_ridge(X)
 print("\nVIF before removing multicollinearity:")
