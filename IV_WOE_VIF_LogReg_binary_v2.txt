@@ -1,0 +1,130 @@
+1. Bin the Continuous Variables:
+
+def create_bins(df, variable, bins=10):
+    df[f'{variable}_binned'] = pd.cut(df[variable], bins=bins)
+    return df
+*****************************************************
+Optimal Binning Using Decision Tree
+from sklearn.tree import DecisionTreeClassifier
+
+def optimal_binning(df, variable, target, max_leaf_nodes=10):
+    tree_model = DecisionTreeClassifier(max_leaf_nodes=max_leaf_nodes)
+    tree_model.fit(df[[variable]], df[target])
+    df[f'{variable}_binned'] = tree_model.apply(df[[variable]])
+    return df
+
+2.  Calculate WOE and IV
+
+import numpy as np
+
+def calculate_woe_iv(df, variable, target):
+    lst = []
+    for val in sorted(df[variable].unique()):
+        total = len(df[df[variable] == val])
+        positive = len(df[(df[variable] == val) & (df[target] == 1)])
+        negative = len(df[(df[variable] == val) & (df[target] == 0)])
+        
+        if positive == 0:
+            positive = 0.5
+        if negative == 0:
+            negative = 0.5
+        
+        ratio = positive / negative
+        woe = np.log(ratio)
+        iv = (positive - negative) * woe / len(df)
+        
+        lst.append({'Value': val, 'Total': total, 'Positive': positive, 'Negative': negative, 'WoE': woe, 'IV': iv})
+    
+    woe_df = pd.DataFrame(lst)
+    iv_total = woe_df['IV'].sum()
+    return woe_df, iv_total
+
+
+3. Putting It All Together
+
+# Load the dataset
+df = pd.read_csv('leaf.csv')
+
+# List of continuous variables and the binary target variable
+continuous_vars = ['var1', 'var2', 'var3', 'var4']  # replace with your continuous variable names
+target = 'binary_target'  # replace with your target variable name
+
+# Create optimal bins for continuous variables and calculate WOE and IV
+woe_iv_dict = {}
+for var in continuous_vars:
+    df = optimal_binning(df, var, target)
+    woe_df, iv_total = calculate_woe_iv(df, f'{var}_binned', target)
+    woe_iv_dict[var] = {'WOE': woe_df, 'IV': iv_total}
+
+# Print WOE and IV for each variable
+for var in woe_iv_dict:
+    print(f"Variable: {var}")
+    print("WOE Table:")
+    print(woe_iv_dict[var]['WOE'])
+    print(f"IV: {woe_iv_dict[var]['IV']}")
+    print("\n")
+
+
+
+************************************
+Calculate WOE:
+
+import numpy as np
+
+def calculate_woe_iv(df, variable, target):
+    lst = []
+    for val in sorted(df[variable].unique()):
+        total = len(df[df[variable] == val])
+        positive = len(df[(df[variable] == val) & (df[target] == 1)])
+        negative = len(df[(df[variable] == val) & (df[target] == 0)])
+        
+        if positive == 0:
+            positive = 0.5
+        if negative == 0:
+            negative = 0.5
+        
+        ratio = positive / negative
+        woe = np.log(ratio)
+        iv = (positive - negative) * woe / len(df)
+        
+        lst.append({'Value': val, 'Total': total, 'Positive': positive, 'Negative': negative, 'WoE': woe, 'IV': iv})
+    
+    woe_df = pd.DataFrame(lst)
+    iv_total = woe_df['IV'].sum()
+    return woe_df, iv_total
+
+def transform_woe(df, variable, woe_df):
+    woe_dict = woe_df.set_index('Value')['WoE'].to_dict()
+    df[f'{variable}_woe'] = df[variable].map(woe_dict)
+    return df
+
+Apply Logistic Regression:
+
+from sklearn.linear_model import LogisticRegression
+
+# Load the dataset
+df = pd.read_csv('leaf.csv')
+
+# List of continuous variables and the binary target variable
+continuous_vars = ['var1', 'var2', 'var3', 'var4']  # replace with your continuous variable names
+target = 'binary_target'  # replace with your target variable name
+
+# Create optimal bins for continuous variables, calculate WOE, and transform the variables
+for var in continuous_vars:
+    df = optimal_binning(df, var, target)
+    woe_df, _ = calculate_woe_iv(df, f'{var}_binned', target)
+    df = transform_woe(df, f'{var}_binned', woe_df)
+
+# Prepare the dataset for logistic regression
+woe_vars = [f'{var}_binned_woe' for var in continuous_vars]
+X = df[woe_vars]
+y = df[target]
+
+# Fit the logistic regression model
+log_reg = LogisticRegression()
+log_reg.fit(X, y)
+
+# Print the coefficients of the logistic regression model
+for var, coef in zip(woe_vars, log_reg.coef_[0]):
+    print(f"Variable: {var}, Coefficient: {coef}")
+
