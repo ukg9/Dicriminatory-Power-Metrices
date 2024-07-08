@@ -183,7 +183,24 @@ while vif_data['VIF'].max() > 10:
 
 print("\nVIF after removing multicollinearity:")
 print(vif_data)
+********************************************************************************************************
 
+# Logistic Regression
+model = LogisticRegression()
+model.fit(X, y)
+
+# Predictions
+y_pred = model.predict(X)
+y_prob = model.predict_proba(X)[:, 1]
+
+# Evaluation
+print("\nClassification Report:")
+print(classification_report(y, y_pred))
+print(f"ROC AUC: {roc_auc_score(y, y_prob)}")
+
+# Plot WOE for each feature
+plot_woe(woe_dict)
+***********************************************************************************************************************
 # Split the data
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
