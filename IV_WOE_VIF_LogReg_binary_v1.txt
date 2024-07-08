@@ -83,7 +83,22 @@ def calculate_vif_ridge(X):
         vif = 1 / (1 - r_squared)
         vif_data.loc[i, "VIF"] = vif
     return vif_data
-
+*******************************************************************************************
+def calculate_vif_ridge(X):
+    vif_data = pd.DataFrame()
+    vif_data["feature"] = X.columns
+    ridge = Ridge(alpha=0.1)
+    
+    for i in range(len(X.columns)):
+        X_other = X.drop(X.columns[i], axis=1)  # Use drop instead of np.delete
+        y = X.iloc[:, i].values
+        ridge.fit(X_other, y)
+        r_squared = ridge.score(X_other, y)
+        vif = 1 / (1 - r_squared)
+        vif_data.loc[i, "VIF"] = vif
+        
+    return vif_data
+*************************************************************************************************
 # Prepare the dataset
 continuous_features = ['cont1', 'cont2', 'cont3', 'cont4']
 categorical_features = ['cat1', 'cat2', 'cat3']  # Include the binary categorical variable
