@@ -142,7 +142,14 @@ for feature in continuous_features:
 print("Information Value (IV) for all features before thresholding:")
 for feature, iv in iv_dict.items():
     print(f"{feature}: {iv}")
+****************************************************************
 
+# Print WOE for all variables
+print("\nWeight of Evidence (WOE) for all variables:")
+for feature, woe in woe_dict.items():
+    print(f"\nWOE for {feature}:")
+    print(woe[['WOE']])
+****************************************************************
 # Feature selection based on IV threshold
 iv_threshold = 0.02  # You can adjust this threshold
 selected_features = [feature for feature, iv in iv_dict.items() if iv > iv_threshold]
