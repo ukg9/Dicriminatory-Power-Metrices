@@ -44,7 +44,28 @@ def calculate_woe_iv(df, feature, target):
     iv = grouped['IV'].sum()
 
     return grouped['WOE'].to_dict(), iv, grouped
+***************************************************************************************************************
+# Calculating WOE and IV
+def calculate_woe_iv(df, feature, target):
+    df = df.copy()
+    total_good = df[target].sum()
+    total_bad = len(df) - total_good
 
+    grouped = df.groupby(feature)[target].agg(['sum', 'count'])
+    grouped['good_dist'] = grouped['sum'] / total_good
+    grouped['bad_dist'] = (grouped['count'] - grouped['sum']) / total_bad
+    
+    # Add a small constant to avoid division by zero and log of zero issues
+    grouped['good_dist'] = grouped['good_dist'].replace(0, 1e-6)
+    grouped['bad_dist'] = grouped['bad_dist'].replace(0, 1e-6)
+    
+    grouped['WOE'] = np.log(grouped['good_dist'] / grouped['bad_dist'])
+    grouped['IV'] = (grouped['good_dist'] - grouped['bad_dist']) * grouped['WOE']
+
+    iv = grouped['IV'].sum()
+
+    return grouped['WOE'].to_dict(), iv, grouped
+*************************************************************************************************************************
 # Transforming categorical variables and calculating IV
 def transform_and_calculate_iv(df, categorical_features, target):
     iv_dict = {}
